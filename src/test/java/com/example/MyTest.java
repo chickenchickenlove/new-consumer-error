@@ -3,6 +3,8 @@ package com.example;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.internals.ConsumerNetworkThread;
+import org.apache.kafka.clients.consumer.internals.HeartbeatRequestManager;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -46,12 +48,15 @@ public class MyTest {
 
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         for (int i = 0; i < 100; i++) {
+            System.out.println("i :" + i);
             ConsumerRecords<Object, String> poll = consumer.poll(Duration.ofSeconds(1));
             if (!poll.isEmpty()) {
                 countDownLatch.countDown();
                 break;
             }
         }
+
+        Thread.sleep(1000000);
 
         assertThat(countDownLatch.await(10, TimeUnit.SECONDS)).isTrue();
     }
@@ -67,7 +72,13 @@ public class MyTest {
         consumer.subscribe(Collections.singletonList("hello"));
 
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1000; i++) {
+            if (i == 20) {
+                System.out.println("retry consume");
+                consumer.subscribe(Collections.singletonList("hello"));
+                Thread.sleep(5000);
+            }
+            System.out.println("i :" + i);
             ConsumerRecords<Object, String> poll = consumer.poll(Duration.ofSeconds(1));
             if (!poll.isEmpty()) {
                 countDownLatch.countDown();
